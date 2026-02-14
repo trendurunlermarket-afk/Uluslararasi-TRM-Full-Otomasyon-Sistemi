@@ -215,7 +215,7 @@ class UrunVeritabani:
                 'ad': 'Piper Termal Çorap',
                 'fiyat': 49,
                 'link': 'https://www.trendyol.com/piper/erkek-termal-corap-3-lu-siyah-p-209319889',
-                'aciklama': '3'lü set termal çorap, kışlık, yünlü, sıcak tutar',
+                'aciklama': '3 lüt set temalı çorapkar, kışlık, yünlü, sıcak tutar
                 'resim': 'https://example.com/corap.jpg',
                 'kategori': 'giyim'
             },
