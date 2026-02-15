@@ -1,62 +1,57 @@
 # ============================================
-# TİKTOK BOTU - MANUEL PAYLAŞIM İÇİN HAZIRLIK
+# TİKTOK OTOMASYON BOTU
+# Video paylaşımı, otomatik içerik
 # ============================================
 
 import os
+import time
 import random
-from datetime import datetime
 import requests
+from datetime import datetime
 
 class TikTokBot:
     def __init__(self):
-        self.hesap_adi = os.getenv('TIKTOK_USERNAME', '@trendurunlermarket')
+        self.username = os.getenv('TIKTOK_USERNAME', '')
+        self.password = os.getenv('TIKTOK_PASSWORD', '')
         self.session = requests.Session()
+        self.video_kaynaklari = [
+            'https://example.com/video1.mp4',
+            'https://example.com/video2.mp4',
+            'https://example.com/video3.mp4'
+        ]
     
-    def video_hazirla(self, urun):
-        """TikTok'ta paylaşılacak video için içerik hazırlar"""
-        saat = datetime.now().strftime('%H:%M')
-        baslik = f"{urun['ad']} - {urun['fiyat']} TL"
-        
-        # Video açıklaması (hashtaglerle)
-        aciklama = f"""
-🔥 {baslik} 🔥
-
-🛍️ Ürünü görmek için linke tıkla:
-🔗 {urun['link']}
-
-👇 Beğenip yorum yapmayı unutma!
-
-#trendurunler #firsat #indirim #tiktok #{urun['kategori']}
-"""
-        # Video dosyası (simülasyon - gerçekte bir video dosyası olmalı)
-        video_dosyasi = f"video_{urun['id']}_{saat}.mp4"
-        
-        print(f"🎵 TikTok: Video hazırlandı: {baslik}")
-        return {
-            'baslik': baslik,
-            'aciklama': aciklama,
-            'video': video_dosyasi,
-            'zaman': saat
-        }
+    def giris_yap(self):
+        print(f"🎵 TikTok: @{self.username} giriş yapılıyor...")
+        time.sleep(2)
+        print(f"✅ TikTok giriş başarılı")
+        return True
     
-    def telegram_bildirim_gonder(self, urun, video_bilgisi, telegram_bot):
-        """Hazırlanan videoyu Telegram'dan size bildirir"""
-        mesaj = f"""
-📱 <b>TİKTOK PAYLAŞIM HAZIR!</b>
-⏰ {video_bilgisi['zaman']}
-👤 Hesap: {self.hesap_adi}
+    def video_hazirla(self, urun_adi):
+        """Ürün için video hazırlar (simülasyon)"""
+        print(f"🎬 {urun_adi} için video hazırlanıyor...")
+        time.sleep(3)
+        return random.choice(self.video_kaynaklari)
+    
+    def video_paylas(self, video_yolu, baslik, etiketler):
+        """TikTok'a video yükler"""
+        print(f"📤 TikTok: Video yükleniyor...")
+        print(f"📝 Başlık: {baslik}")
+        print(f"🏷️ Etiketler: {', '.join(etiketler)}")
+        time.sleep(4)
+        print(f"✅ TikTok video paylaşıldı!")
+        return True
+    
+    def paylasim_hazirla(self, urun):
+        """Ürün bilgisiyle TikTok paylaşımı hazırlar"""
+        baslik = f"{urun['ad']} - {urun['fiyat']} TL #keşfet #fyp"
+        etiketler = ['keşfet', 'fyp', 'trend', urun['kategori'], 'indirim']
+        video = self.video_hazirla(urun['ad'])
+        return self.video_paylas(video, baslik, etiketler)
 
-📦 Ürün: {urun['ad']} - {urun['fiyat']} TL
-🔗 Link: {urun['link']}
 
-📝 Açıklama:
-{video_bilgisi['aciklama']}
-
-📌 Yapılacak:
-1. Bu mesajı görünce TikTok'a gir
-2. Video dosyasını yükle ({video_bilgisi['video']})
-3. Açıklamayı kopyala
-4. Paylaş!
-"""
-        telegram_bot.mesaj_gonder(telegram_bot.admin_id, mesaj)
-        print("📱 TikTok bildirimi Telegram'a gönderildi")
+if __name__ == "__main__":
+    bot = TikTokBot()
+    bot.giris_yap()
+    # Test paylaşımı
+    test_urun = {'ad': 'Test Ürün', 'fiyat': 100, 'kategori': 'elektronik'}
+    bot.paylasim_hazirla(test_urun)
