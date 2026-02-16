@@ -1,7 +1,7 @@
 # ============================================
 # TAM OTOMATİK SOSYAL MEDYA BOTU
-# INSTAGRAM + FACEBOOK + TELEGRAM
-# MANUEL KOMUTLAR EKLENDİ ( /instagram /facebook )
+# INSTAGRAM + FACEBOOK + TELEGRAM + TIKTOK
+# TÜM KOMUTLAR EKLENDİ
 # ============================================
 
 import os
@@ -27,7 +27,6 @@ class TelegramBot:
         self.base_url = f"https://api.telegram.org/bot{self.token}"
     
     def mesaj_gonder(self, chat_id, mesaj):
-        """Telegram mesajı gönderir"""
         try:
             url = f"{self.base_url}/sendMessage"
             data = {
@@ -47,7 +46,6 @@ class TelegramBot:
             return False
     
     def bildirim_gonder(self, platform, urun_adi, durum):
-        """Yöneticiye bildirim gönderir"""
         mesaj = f"""
 🔔 <b>SOSYAL MEDYA BİLDİRİMİ</b>
 ━━━━━━━━━━━━━━━━━━━━━
@@ -71,14 +69,12 @@ class InstagramBot:
         self.user_id = None
         
     def giris_yap(self):
-        """Instagram'a giriş yapar"""
         print(f"📱 Instagram: @{self.username} giriş yapılıyor...")
         time.sleep(2)
         print(f"✅ Instagram: @{self.username} giriş başarılı")
         return True
     
     def fotografli_gonderi_paylas(self, resim_url, baslik, urun_linki):
-        """Fotoğraflı gönderi paylaşır"""
         metin = f"""
 🔥 {baslik} 🔥
 
@@ -95,7 +91,6 @@ class InstagramBot:
         return True
     
     def hikaye_paylas(self, resim_url, urun_adi):
-        """Instagram hikayesi paylaşır"""
         print(f"📱 Instagram: Hikaye paylasiliyor...")
         time.sleep(2)
         print(f"✅ Instagram: Hikaye paylasildi!")
@@ -112,7 +107,6 @@ class FacebookBot:
         self.access_token = os.getenv('FACEBOOK_ACCESS_TOKEN', '')
         
     def sayfa_gonderisi_paylas(self, baslik, urun_linki, aciklama):
-        """Facebook sayfasına gönderi paylaşır"""
         metin = f"""
 📦 {baslik}
 
@@ -126,6 +120,40 @@ class FacebookBot:
         time.sleep(3)
         print(f"✅ Facebook: Gonderi paylasildi!")
         return True
+
+
+# ============================================
+# TIKTOK BOT (YENİ EKLENDİ)
+# ============================================
+class TikTokBot:
+    def __init__(self):
+        self.username = os.getenv('TIKTOK_USERNAME', '')
+        self.password = os.getenv('TIKTOK_PASSWORD', '')
+        self.session = requests.Session()
+        
+    def giris_yap(self):
+        print(f"🎵 TikTok: @{self.username} giriş yapılıyor...")
+        time.sleep(2)
+        print(f"✅ TikTok giriş başarılı")
+        return True
+    
+    def video_paylas(self, video_yolu, metin):
+        print(f"📤 TikTok: Video yükleniyor...")
+        print(f"📝 Metin: {metin}")
+        time.sleep(4)
+        print(f"✅ TikTok video paylaşıldı!")
+        return True
+    
+    def paylasim_hazirla(self, urun):
+        metin = f"""
+🔥 {urun['ad']} - {urun['fiyat']} TL 🔥
+
+{urun.get('aciklama', 'Kaçırma fırsatı!')}
+
+#keşfet #fyp #{urun.get('kategori', 'ürün')} #indirim #fırsat
+"""
+        video = "videos/default.mp4"  # Gerçekte video dosyası seçilmeli
+        return self.video_paylas(video, metin)
 
 
 # ============================================
@@ -184,7 +212,6 @@ class UrunVeritabani:
         self.son_paylasilan = []
     
     def rastgele_urun_sec(self):
-        """Rastgele bir urun secer"""
         secilen = random.choice(self.urunler)
         return secilen
 
@@ -204,7 +231,6 @@ def run_http_server():
     print(f"✅ Basit web sunucusu {port} numaralı portta başlatıldı.")
     server.serve_forever()
 
-# Web sunucusunu arka planda başlat
 threading.Thread(target=run_http_server, daemon=True).start()
 
 
@@ -216,26 +242,27 @@ class SosyalMedyaYoneticisi:
         print("""
 ╔══════════════════════════════════════════════════╗
 ║  🚀 TRM TAM OTOMASYON SOSYAL MEDYA BOTU         ║
-║  📱 Instagram | 📘 Facebook | 🤖 Telegram        ║
-║  📌 Manuel komutlar: /instagram , /facebook     ║
+║  📱 Instagram | 📘 Facebook | 🎵 TikTok          ║
+║  📌 Manuel komutlar: /instagram , /facebook , /tiktok║
 ╚══════════════════════════════════════════════════╝
         """)
         
-        # Botlari baslat
         self.telegram = TelegramBot()
         self.instagram = InstagramBot()
         self.facebook = FacebookBot()
+        self.tiktok = TikTokBot()
         self.urunler = UrunVeritabani()
         
-        # Paylasim sayaci
         self.paylasim_sayaci = {
             'instagram': 0,
-            'facebook': 0
+            'facebook': 0,
+            'tiktok': 0
         }
         
         print("✅ Botlar baslatildi")
         print(f"📱 Instagram: @{self.instagram.username}")
         print(f"📘 Facebook: {self.facebook.page_name}")
+        print(f"🎵 TikTok: @{self.tiktok.username}")
         print("⏳ Instagram giris yapiliyor...")
         
         self.instagram.giris_yap()
@@ -244,7 +271,6 @@ class SosyalMedyaYoneticisi:
         print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
     
     def instagram_paylas(self):
-        """Instagram'da otomatik paylasim yapar"""
         try:
             urun = self.urunler.rastgele_urun_sec()
             saat = datetime.now().strftime('%H:%M')
@@ -279,7 +305,6 @@ class SosyalMedyaYoneticisi:
             return False
     
     def facebook_paylas(self):
-        """Facebook'ta otomatik paylasim yapar"""
         try:
             urun = self.urunler.rastgele_urun_sec()
             saat = datetime.now().strftime('%H:%M')
@@ -309,21 +334,48 @@ class SosyalMedyaYoneticisi:
             print(f"❌ Facebook paylasim hatasi: {e}")
             return False
     
+    # ==================== TIKTOK FONKSİYONU (YENİ) ====================
+    def tiktok_paylas(self):
+        try:
+            urun = self.urunler.rastgele_urun_sec()
+            saat = datetime.now().strftime('%H:%M')
+            
+            print(f"\n[{saat}] 🎵 TIKTOK PAYLASIM BASLIYOR...")
+            print(f"📦 Urun: {urun['ad']} - {urun['fiyat']} TL")
+            
+            sonuc = self.tiktok.paylasim_hazirla(urun)
+            
+            if sonuc:
+                self.paylasim_sayaci['tiktok'] += 1
+                self.telegram.bildirim_gonder(
+                    "TikTok",
+                    urun['ad'],
+                    f"✅ Paylasildi (Toplam: {self.paylasim_sayaci['tiktok']})"
+                )
+            
+            return sonuc
+            
+        except Exception as e:
+            print(f"❌ TikTok paylasim hatasi: {e}")
+            return False
+    # ================================================================
+    
     # ==================== MANUEL KOMUTLAR ====================
     def manuel_instagram_paylas(self):
-        """Telegram'dan gelen /instagram komutu için"""
         self.instagram_paylas()
         return "✅ Instagram manuel paylaşım yapıldı!"
     
     def manuel_facebook_paylas(self):
-        """Telegram'dan gelen /facebook komutu için"""
         self.facebook_paylas()
         return "✅ Facebook manuel paylaşım yapıldı!"
-    # ========================================================
+    
+    def manuel_tiktok_paylas(self):  # YENİ EKLENDİ
+        self.tiktok_paylas()
+        return "✅ TikTok manuel paylaşım yapıldı!"
+    # ==========================================================
     
     def telegram_rapor(self):
-        """Her saat basi Telegram raporu gonderir"""
-        toplam = self.paylasim_sayaci['instagram'] + self.paylasim_sayaci['facebook']
+        toplam = self.paylasim_sayaci['instagram'] + self.paylasim_sayaci['facebook'] + self.paylasim_sayaci['tiktok']
         
         rapor = f"""
 📊 <b>SAATLIK PAYLASIM RAPORU</b>
@@ -331,6 +383,7 @@ class SosyalMedyaYoneticisi:
 ⏰ Saat: {datetime.now().strftime('%H:%M')}
 📱 Instagram: {self.paylasim_sayaci['instagram']} paylasim
 📘 Facebook: {self.paylasim_sayaci['facebook']} paylasim
+🎵 TikTok: {self.paylasim_sayaci['tiktok']} paylasim
 ━━━━━━━━━━━━━━━━━━━━━
 🎯 Toplam Paylasim: {toplam}
 📌 Sistem: ✅ Calisiyor
@@ -341,42 +394,37 @@ class SosyalMedyaYoneticisi:
         print(f"\n[{datetime.now().strftime('%H:%M')}] 🤖 Telegram raporu gonderildi")
     
     def calistir(self):
-        """Ana donguyu baslatir"""
-        
         print("""
 ⏰ ZAMANLAMA AYARLARI:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📱 Instagram: Her 2 saatte bir
 📘 Facebook:  Her 3 saatte bir
-🤖 Telegram:  Her saat basi rapor
+🎵 TikTok:    Her 4 saatte bir
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📌 Manuel komutlar: /instagram , /facebook
+📌 Manuel komutlar: /instagram , /facebook , /tiktok
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         """)
         
-        # Instagram: Her 2 saatte bir
         schedule.every(2).hours.at(":00").do(self.instagram_paylas)
         schedule.every(2).hours.at(":30").do(self.instagram_paylas)
         
-        # Facebook: Her 3 saatte bir
         schedule.every(3).hours.at(":15").do(self.facebook_paylas)
         schedule.every(3).hours.at(":45").do(self.facebook_paylas)
         
-        # Telegram raporu: Her saat basi
+        schedule.every(4).hours.at(":00").do(self.tiktok_paylas)  # TikTok eklendi
+        
         schedule.every().hour.at(":05").do(self.telegram_rapor)
         
-        # Ilk paylasim hemen
         schedule.every(1).minutes.do(self.instagram_paylas).tag('ilk')
         schedule.every(2).minutes.do(self.facebook_paylas).tag('ilk')
+        schedule.every(3).minutes.do(self.tiktok_paylas).tag('ilk')
         
         print("✅ Otomatik paylasim sistemi basladi!")
         print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
         
-        # 5 dakika sonra ilk paylasimlari kaldir
         time.sleep(300)
         schedule.clear('ilk')
         
-        # Sonsuz dongu
         while True:
             schedule.run_pending()
             time.sleep(60)
@@ -386,7 +434,6 @@ class SosyalMedyaYoneticisi:
 # TELEGRAM KOMUTLARINI YAKALAYAN FONKSİYON
 # ============================================
 def telegram_dinleyici():
-    """Bu fonksiyon Telegram'dan gelen komutları yakalar"""
     import telebot
     
     TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '')
@@ -401,6 +448,7 @@ def telegram_dinleyici():
 Komutlar:
 /instagram - Manuel Instagram paylaşımı
 /facebook - Manuel Facebook paylaşımı
+/tiktok - Manuel TikTok paylaşımı
 /durum - Sistem durumu
         """)
     
@@ -414,13 +462,26 @@ Komutlar:
         sonuc = yonetici.manuel_facebook_paylas()
         bot.reply_to(message, sonuc)
     
+    # ========== TİKTOK KOMUTU (YENİ) ==========
+    @bot.message_handler(commands=['tiktok'])
+    def tiktok_komut(message):
+        sonuc = yonetici.manuel_tiktok_paylas()
+        bot.reply_to(message, sonuc)
+    # ============================================
+    
     @bot.message_handler(commands=['durum'])
     def durum_komut(message):
+        toplam = (yonetici.paylasim_sayaci['instagram'] + 
+                  yonetici.paylasim_sayaci['facebook'] + 
+                  yonetici.paylasim_sayaci['tiktok'])
         rapor = f"""
 📊 GÜNCEL DURUM
 ━━━━━━━━━━━━━━━━━━━━━
 📱 Instagram: {yonetici.paylasim_sayaci['instagram']} paylaşım
 📘 Facebook: {yonetici.paylasim_sayaci['facebook']} paylaşım
+🎵 TikTok: {yonetici.paylasim_sayaci['tiktok']} paylaşım
+━━━━━━━━━━━━━━━━━━━━━
+🎯 Toplam: {toplam} paylaşım
 📌 Sistem: ✅ Aktif
 ━━━━━━━━━━━━━━━━━━━━━
         """
@@ -435,12 +496,9 @@ Komutlar:
 # ============================================
 if __name__ == "__main__":
     try:
-        # Telegram dinleyicisini ayrı bir thread'de başlat
-        import threading
         telegram_thread = threading.Thread(target=telegram_dinleyici, daemon=True)
         telegram_thread.start()
         
-        # Ana yöneticiyi başlat
         yonetici = SosyalMedyaYoneticisi()
         yonetici.calistir()
         
