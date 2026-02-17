@@ -1,7 +1,7 @@
 # ============================================
 # TAM OTOMATİK SOSYAL MEDYA BOTU
 # INSTAGRAM + FACEBOOK + TELEGRAM + TIKTOK
-# AI DESTEKLİ MÜŞTERİ ASİSTANI EKLENDİ
+# AI MÜŞTERİ ASİSTANI AKTİF (anthropic 0.3.0)
 # ============================================
 
 import os
@@ -13,19 +13,18 @@ import threading
 from datetime import datetime
 from dotenv import load_dotenv
 from http.server import HTTPServer, BaseHTTPRequestHandler
-import anthropic  # Claude API için
+import anthropic  # Claude API - eski versiyon
 
-# Ortam değişkenlerini yükle
 load_dotenv()
 
 # ============================================
-# CLAUDE AI (YENİ!)
+# CLAUDE AI
 # ============================================
 class ClaudeAI:
     def __init__(self):
         self.api_key = os.getenv('CLAUDE_API_KEY', '')
         if self.api_key:
-            self.client = anthropic.Anthropic(api_key=self.api_key)
+            self.client = anthropic.Client(api_key=self.api_key)  # Eski versiyonda Client kullanılır
         else:
             self.client = None
             print("⚠️ Claude API anahtarı bulunamadı, AI özellikleri devre dışı")
@@ -40,19 +39,19 @@ class ClaudeAI:
             Sen Trend Ürünler Market'in müşteri hizmetleri asistanısın.
             Müşteri sorusu: {mesaj}
             
-            Kısa, samimi, yardımsever bir cevap ver.
+            Kısa, samimi, yardımsever bir cevap ver (maksimum 150 kelime).
             Ürün sorulursa fiyat ve özelliklerden bahset.
             Satış odaklı ol ama zorlama yapma.
             Türkçe cevap ver.
             """
             
-            response = self.client.messages.create(
+            response = self.client.completion(
+                prompt=prompt,
                 model="claude-3-sonnet-20241022",
-                max_tokens=200,
-                temperature=0.7,
-                messages=[{"role": "user", "content": prompt}]
+                max_tokens_to_sample=200,
+                temperature=0.7
             )
-            return response.content[0].text.strip()
+            return response['completion'].strip()
         except Exception as e:
             print(f"❌ Claude API hatası: {e}")
             return "Üzgünüm, şu anda cevap veremiyorum. Lütfen daha sonra tekrar deneyin."
@@ -68,7 +67,6 @@ class TelegramBot:
         self.base_url = f"https://api.telegram.org/bot{self.token}"
     
     def mesaj_gonder(self, chat_id, mesaj):
-        """Telegram mesajı gönderir"""
         try:
             url = f"{self.base_url}/sendMessage"
             data = {
@@ -88,7 +86,6 @@ class TelegramBot:
             return False
     
     def bildirim_gonder(self, platform, urun_adi, durum):
-        """Yöneticiye bildirim gönderir"""
         mesaj = f"""
 🔔 <b>SOSYAL MEDYA BİLDİRİMİ</b>
 ━━━━━━━━━━━━━━━━━━━━━
@@ -112,14 +109,12 @@ class InstagramBot:
         self.user_id = None
         
     def giris_yap(self):
-        """Instagram'a giriş yapar (simülasyon)"""
         print(f"📱 Instagram: @{self.username} giriş yapılıyor...")
         time.sleep(2)
         print(f"✅ Instagram: @{self.username} giriş başarılı")
         return True
     
     def fotografli_gonderi_paylas(self, resim_url, baslik, urun_linki):
-        """Fotoğraflı gönderi paylaşır (simülasyon)"""
         metin = f"""
 🔥 {baslik} 🔥
 
@@ -136,7 +131,6 @@ class InstagramBot:
         return True
     
     def hikaye_paylas(self, resim_url, urun_adi):
-        """Instagram hikayesi paylaşır (simülasyon)"""
         print(f"📱 Instagram: Hikaye paylasiliyor...")
         time.sleep(2)
         print(f"✅ Instagram: Hikaye paylasildi!")
@@ -153,7 +147,6 @@ class FacebookBot:
         self.access_token = os.getenv('FACEBOOK_ACCESS_TOKEN', '')
         
     def sayfa_gonderisi_paylas(self, baslik, urun_linki, aciklama):
-        """Facebook sayfasına gönderi paylaşır (simülasyon)"""
         metin = f"""
 📦 {baslik}
 
@@ -179,14 +172,12 @@ class TikTokBot:
         self.session = requests.Session()
         
     def giris_yap(self):
-        """TikTok'a giriş yapar (simülasyon)"""
         print(f"🎵 TikTok: @{self.username} giriş yapılıyor...")
         time.sleep(2)
         print(f"✅ TikTok giriş başarılı")
         return True
     
     def video_paylas(self, video_yolu, metin):
-        """TikTok'a video yükler (simülasyon)"""
         print(f"📤 TikTok: Video yükleniyor...")
         print(f"📝 Metin: {metin}")
         time.sleep(4)
@@ -194,7 +185,6 @@ class TikTokBot:
         return True
     
     def paylasim_hazirla(self, urun):
-        """Ürün bilgisiyle TikTok paylaşımı hazırlar"""
         metin = f"""
 🔥 {urun['ad']} - {urun['fiyat']} TL 🔥
 
@@ -202,7 +192,7 @@ class TikTokBot:
 
 #keşfet #fyp #{urun.get('kategori', 'ürün')} #indirim #fırsat
 """
-        video = "videos/default.mp4"  # Gerçekte video dosyası seçilmeli
+        video = "videos/default.mp4"
         return self.video_paylas(video, metin)
 
 
@@ -258,11 +248,9 @@ class UrunVeritabani:
                 'kategori': 'kozmetik'
             }
         ]
-        
         self.son_paylasilan = []
     
     def rastgele_urun_sec(self):
-        """Rastgele bir urun secer"""
         secilen = random.choice(self.urunler)
         return secilen
 
@@ -286,7 +274,7 @@ threading.Thread(target=run_http_server, daemon=True).start()
 
 
 # ============================================
-# SOSYAL MEDYA YONETICISI (ANA SINIF)
+# SOSYAL MEDYA YONETICISI
 # ============================================
 class SosyalMedyaYoneticisi:
     def __init__(self):
@@ -294,7 +282,7 @@ class SosyalMedyaYoneticisi:
 ╔══════════════════════════════════════════════════╗
 ║  🚀 TRM TAM OTOMASYON SOSYAL MEDYA BOTU         ║
 ║  📱 Instagram | 📘 Facebook | 🎵 TikTok          ║
-║  🤖 AI Müşteri Asistanı EKLENDİ                 ║
+║  🤖 AI Müşteri Asistanı AKTİF                    ║
 ╚══════════════════════════════════════════════════╝
         """)
         
@@ -324,7 +312,6 @@ class SosyalMedyaYoneticisi:
         print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
     
     def instagram_paylas(self):
-        """Instagram'da otomatik paylasim yapar"""
         try:
             urun = self.urunler.rastgele_urun_sec()
             saat = datetime.now().strftime('%H:%M')
@@ -353,13 +340,11 @@ class SosyalMedyaYoneticisi:
                     print(f"📱 Instagram hikayesi de eklendi!")
             
             return sonuc
-            
         except Exception as e:
             print(f"❌ Instagram paylasim hatasi: {e}")
             return False
     
     def facebook_paylas(self):
-        """Facebook'ta otomatik paylasim yapar"""
         try:
             urun = self.urunler.rastgele_urun_sec()
             saat = datetime.now().strftime('%H:%M')
@@ -384,13 +369,11 @@ class SosyalMedyaYoneticisi:
                 )
             
             return sonuc
-            
         except Exception as e:
             print(f"❌ Facebook paylasim hatasi: {e}")
             return False
     
     def tiktok_paylas(self):
-        """TikTok'ta otomatik paylasim yapar"""
         try:
             urun = self.urunler.rastgele_urun_sec()
             saat = datetime.now().strftime('%H:%M')
@@ -409,28 +392,23 @@ class SosyalMedyaYoneticisi:
                 )
             
             return sonuc
-            
         except Exception as e:
             print(f"❌ TikTok paylasim hatasi: {e}")
             return False
     
     def manuel_instagram_paylas(self):
-        """Telegram'dan gelen /instagram komutu için"""
         self.instagram_paylas()
         return "✅ Instagram manuel paylaşım yapıldı!"
     
     def manuel_facebook_paylas(self):
-        """Telegram'dan gelen /facebook komutu için"""
         self.facebook_paylas()
         return "✅ Facebook manuel paylaşım yapıldı!"
     
     def manuel_tiktok_paylas(self):
-        """Telegram'dan gelen /tiktok komutu için"""
         self.tiktok_paylas()
         return "✅ TikTok manuel paylaşım yapıldı!"
     
     def telegram_rapor(self):
-        """Her saat basi Telegram raporu gonderir"""
         toplam = self.paylasim_sayaci['instagram'] + self.paylasim_sayaci['facebook'] + self.paylasim_sayaci['tiktok']
         
         rapor = f"""
@@ -450,8 +428,6 @@ class SosyalMedyaYoneticisi:
         print(f"\n[{datetime.now().strftime('%H:%M')}] 🤖 Telegram raporu gonderildi")
     
     def calistir(self):
-        """Ana donguyu baslatir"""
-        
         print("""
 ⏰ ZAMANLAMA AYARLARI:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
