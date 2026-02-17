@@ -1,7 +1,6 @@
 # ============================================
 # TAM OTOMATİK SOSYAL MEDYA BOTU
-# INSTAGRAM + FACEBOOK + TELEGRAM + TIKTOK
-# AI MÜŞTERİ ASİSTANI AKTİF (anthropic 0.3.0)
+# DOĞRUDAN CLAUDE API İSTEKLERİ (kütüphanesiz)
 # ============================================
 
 import os
@@ -10,51 +9,59 @@ import random
 import schedule
 import requests
 import threading
+import json
 from datetime import datetime
 from dotenv import load_dotenv
 from http.server import HTTPServer, BaseHTTPRequestHandler
-import anthropic  # Claude API - eski versiyon
 
 load_dotenv()
 
 # ============================================
-# CLAUDE AI
+# CLAUDE AI (DOĞRUDAN API)
 # ============================================
 class ClaudeAI:
     def __init__(self):
         self.api_key = os.getenv('CLAUDE_API_KEY', '')
-        if self.api_key:
-            self.client = anthropic.Client(api_key=self.api_key)  # Eski versiyonda Client kullanılır
-        else:
-            self.client = None
-            print("⚠️ Claude API anahtarı bulunamadı, AI özellikleri devre dışı")
-    
+        self.api_url = "https://api.anthropic.com/v1/messages"
+        
     def cevap_uret(self, mesaj):
-        """Müşteri mesajına Claude ile cevap üretir"""
-        if not self.client:
-            return "Şu anda yapay zeka asistanı aktif değil. Lütfen daha sonra tekrar deneyin."
+        """Doğrudan Claude API'ye istek gönder"""
+        if not self.api_key:
+            return "Claude API anahtarı bulunamadı."
+        
+        headers = {
+            "x-api-key": self.api_key,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json"
+        }
+        
+        data = {
+            "model": "claude-3-sonnet-20241022",
+            "max_tokens": 200,
+            "messages": [
+                {"role": "user", "content": f"""
+Sen Trend Ürünler Market'in müşteri hizmetleri asistanısın.
+Müşteri sorusu: {mesaj}
+
+Kısa, samimi, yardımsever bir cevap ver.
+Ürün sorulursa fiyat ve özelliklerden bahset.
+Satış odaklı ol ama zorlama yapma.
+Türkçe cevap ver.
+"""}
+            ]
+        }
         
         try:
-            prompt = f"""
-            Sen Trend Ürünler Market'in müşteri hizmetleri asistanısın.
-            Müşteri sorusu: {mesaj}
-            
-            Kısa, samimi, yardımsever bir cevap ver (maksimum 150 kelime).
-            Ürün sorulursa fiyat ve özelliklerden bahset.
-            Satış odaklı ol ama zorlama yapma.
-            Türkçe cevap ver.
-            """
-            
-            response = self.client.completion(
-                prompt=prompt,
-                model="claude-3-sonnet-20241022",
-                max_tokens_to_sample=200,
-                temperature=0.7
-            )
-            return response['completion'].strip()
+            response = requests.post(self.api_url, headers=headers, json=data, timeout=10)
+            if response.status_code == 200:
+                sonuc = response.json()
+                return sonuc['content'][0]['text']
+            else:
+                print(f"❌ Claude API hatası: {response.status_code} - {response.text}")
+                return "Üzgünüm, şu anda cevap veremiyorum."
         except Exception as e:
-            print(f"❌ Claude API hatası: {e}")
-            return "Üzgünüm, şu anda cevap veremiyorum. Lütfen daha sonra tekrar deneyin."
+            print(f"❌ Claude bağlantı hatası: {e}")
+            return "Üzgünüm, şu anda cevap veremiyorum."
 
 
 # ============================================
@@ -282,7 +289,7 @@ class SosyalMedyaYoneticisi:
 ╔══════════════════════════════════════════════════╗
 ║  🚀 TRM TAM OTOMASYON SOSYAL MEDYA BOTU         ║
 ║  📱 Instagram | 📘 Facebook | 🎵 TikTok          ║
-║  🤖 AI Müşteri Asistanı AKTİF                    ║
+║  🤖 Claude API Doğrudan Bağlantı                 ║
 ╚══════════════════════════════════════════════════╝
         """)
         
@@ -303,7 +310,7 @@ class SosyalMedyaYoneticisi:
         print(f"📱 Instagram: @{self.instagram.username}")
         print(f"📘 Facebook: {self.facebook.page_name}")
         print(f"🎵 TikTok: @{self.tiktok.username}")
-        print("🤖 Claude AI: " + ("✅ Aktif" if self.claude.client else "❌ Devre dışı"))
+        print("🤖 Claude AI: " + ("✅ Aktif" if self.claude.api_key else "❌ Devre dışı"))
         print("⏳ Instagram giris yapiliyor...")
         
         self.instagram.giris_yap()
@@ -436,7 +443,7 @@ class SosyalMedyaYoneticisi:
 🎵 TikTok:    Her 4 saatte bir
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📌 Manuel komutlar: /instagram , /facebook , /tiktok
-🤖 AI Asistan: Tüm mesajlara otomatik cevap
+🤖 AI Asistan: Tüm mesajlara otomatik cevap (doğrudan API)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         """)
         
@@ -525,7 +532,7 @@ Komutlar:
     # ========== AI ASİSTAN (TÜM MESAJLARI YAKALA) ==========
     @bot.message_handler(func=lambda m: True)
     def ai_cevapla(message):
-        """Gelen her mesaja Claude AI ile cevap ver"""
+        """Gelen her mesaja Claude AI ile cevap ver (doğrudan API)"""
         print(f"🤔 AI soru alındı: {message.text[:50]}...")
         cevap = yonetici.claude.cevap_uret(message.text)
         bot.reply_to(message, cevap)
